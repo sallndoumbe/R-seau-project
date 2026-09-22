@@ -1,5 +1,13 @@
 const Usemodele = require("../models/user.model");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+
+const createToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "3d",
+  });
+};
+
 
 module.exports.signUp = async (req, res) => {
   const { nom, prenom, email, motdepasse } = req.body;
@@ -35,36 +43,48 @@ module.exports.signIn = async (req, res) => {
     const use = await Usemodele.findOne({ email });
 
     if (!use) {
-      return res.status(404).json({
-        message: "Utilisateur non trouvé",
-      });
-    }
-
-    if (use.motdepasse !== motdepasse) {
       return res.status(401).json({
-        message: "Mot de passe incorrect",
+        message: "Email ou mot de passe incorrect",
       });
     }
 
-    const token = jwt.sign({ id: use._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    const isPasswordValid = await bcrypt.compare(
+      motdepasse,
+      use.motdepasse
+    );
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        message: "Email ou mot de passe incorrect",
+      });
+    }
+
+    const token = createToken(use._id);
+
+    res.cookie("jwt", token, {
+      httpOnly: true,
+      maxAge: 3600000,
     });
 
     res.status(200).json({
       message: "Connexion réussie",
-      token,
+      use,
     });
   } catch (error) {
-    console.error("Erreur lors de la connexion :", error);
+    console.error(
+      "Erreur lors de la connexion de l'utilisateur :",
+      error
+    );
 
     res.status(500).json({
-      message: "Erreur lors de la connexion",
+      message: "Erreur lors de la connexion de l'utilisateur",
     });
   }
 };
 
+
 module.exports.logout = (req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("jwt");
   res.status(200).json({
     message: "Déconnexion réussie",
   });
