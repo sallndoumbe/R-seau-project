@@ -1,9 +1,9 @@
 const express = require("express");
 
 const userRoutes = require("./routes/use.routes");
+const postRoutes = require("./routes/post.routes");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
-
 const { checkUser, requireAuth } = require("./middleware/auth.middleware");
 
 require("dotenv").config({ path: "./config/.env" });
@@ -28,6 +28,9 @@ app.get("/jwtid", requireAuth, (req, res) => {
 
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api/post", postRoutes);
+
+// Démarrage du serveur)
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
