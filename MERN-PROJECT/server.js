@@ -5,11 +5,13 @@ const postRoutes = require("./routes/post.routes");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const { checkUser, requireAuth } = require("./middleware/auth.middleware");
+const cors = require("cors");
 
 require("dotenv").config({ path: "./config/.env" });
 require("./config/db");
 
 const app = express();
+app.use(cors());
 
 // Middleware pour lire le JSON
 app.use(bodyParser.json());

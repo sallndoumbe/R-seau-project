@@ -11,54 +11,67 @@ module.exports.uploadProfil = async (req, res) => {
       });
     }
 
-    // Vérifier le type de fichier
+    // Vérifier le type du fichier
     if (
       req.file.mimetype !== "image/jpeg" &&
       req.file.mimetype !== "image/png"
     ) {
       return res.status(400).json({
-        message: "Seuls les fichiers JPG et PNG sont autorisés",
+        message: "Le fichier doit être une image JPEG ou PNG",
       });
     }
 
-    // Vérifier la taille : 500 Ko
+    // Vérifier la taille
     if (req.file.size > 500000) {
       return res.status(400).json({
         message: "Le fichier est trop volumineux",
       });
     }
 
-    const fileName = req.body.name + ".jpg";
+    // Récupérer l'extension du fichier original
+   const extension = path.extname(req.file.originalname);
 
-    // Chemin vers le dossier de destination
-    const uploadPath = path.join(
-      __dirname,
-      "../client/public/uploads/profil",
-      fileName
-    );
+const fileName = Date.now() + extension;
 
-    // Écrire le fichier sur le disque
-    fs.writeFileSync(uploadPath, req.file.buffer);
+console.log("EXTENSION :", extension);
+console.log("FILENAME :", fileName);
 
-    // Enregistrer le chemin dans MongoDB
-    await userModel.findByIdAndUpdate(
+const uploadDir = path.join(
+  __dirname,
+  "../client/public/uploads/profil"
+);
+
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const filePath = path.join(uploadDir, fileName);
+
+fs.writeFileSync(filePath, req.file.buffer);
+    // Mettre à jour l'utilisateur dans MongoDB
+    const updatedUser = await userModel.findByIdAndUpdate(
       req.body.userId,
       {
         $set: {
           photo: "./uploads/profil/" + fileName,
         },
+      },
+      {
+        returnDocument: "after",
       }
     );
 
+    console.log("UTILISATEUR MIS À JOUR :", updatedUser);
+
     return res.status(200).json({
-      message: "File uploaded successfully",
+      message: "Photo de profil uploadée avec succès",
+      photo: "./uploads/profil/" + fileName,
     });
 
   } catch (error) {
-    console.error("Erreur upload profil :", error);
+    console.error("Erreur upload :", error);
 
     return res.status(500).json({
-      message: error.message,
+      message: "Erreur lors de l'upload",
+      error: error.message,
     });
   }
 };
